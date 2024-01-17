@@ -1,0 +1,47 @@
+edition: 3.0.0 #  命令行YAML规范版本，遵循语义化版本（Semantic Versioning）规范
+name: fc-ai-character
+access: default
+vars:
+  region: "{{ region }}"
+  functionName: "{{ functionName }}"
+  endpoint: "{{ endpoint }}"
+
+resources:
+  web:
+    component: fc3
+    props:
+      region: "${vars.region}"
+      functionName: "${vars.functionName}"
+      description: "AI 艺术字"
+      timeout: 300
+      diskSize: 512
+      runtime: custom
+      cpu: 1
+      memorySize: 1024
+      instanceConcurrency: 100
+      code: code
+      customRuntimeConfig: 
+        port: 9000
+        command: 
+          - node
+        args:
+          - index.js
+      environmentVariables:
+        ENDPOINT: "${vars.endpoint}"
+
+  custom-domain:
+    component: fc3-domain
+    props: #  组件的属性值
+      region: ${vars.region}
+      domainName: auto
+      protocol: HTTP
+      routeConfig:
+        routes:
+          - functionName: ${resources.web.props.functionName}
+            methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+            path: /*
+            qualifier: LATEST
