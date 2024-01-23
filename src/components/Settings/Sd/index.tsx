@@ -2,7 +2,7 @@ import Slider, { Range } from '@/components/Slider';
 import { getModels } from '@/utils/api';
 import { DownOutlined, SyncOutlined, UpOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
-import { Button, Input, Select, Switch } from 'antd';
+import { Button, Input, InputNumber, Select, Switch } from 'antd';
 import React from 'react';
 
 export type SdParams = {
@@ -19,6 +19,7 @@ export type SdParams = {
   face: boolean; // 人脸修复
   hr: number; // 高清修复
   hrSteps: number; // 高清修复步骤数
+  count: number; // 单次出图数量
 };
 
 export function useSdSettings(
@@ -51,38 +52,60 @@ export function useSdSettings(
       hr,
       hrSteps,
       face,
+      count,
     } = state;
 
     return [
       {
-        label: 'SD 地址',
+        label: '每次出图数量',
         span: 24,
         children: (
-          <div style={{ display: 'flex' }}>
-            <Input
+          <div
+            style={{
+              display: 'flex',
+              width: '100%',
+              justifyContent: 'space-between',
+            }}
+          >
+            <InputNumber
               placeholder='http://example.com'
-              value={endpoint}
-              onChange={(e) =>
-                setState((o) => ({ ...o, endpoint: e?.target?.value || '' }))
-              }
+              value={count}
+              min={1}
+              max={8}
+              onChange={(v) => setState((o) => ({ ...o, count: v || 1 }))}
             />
-            {isDev && (
-              <Button
-                style={{ flex: '0 0 0%', marginLeft: 4 }}
-                onClick={() => {
-                  setState((o) => ({ ...o, sdAdvance: !o?.sdAdvance }));
-                }}
-              >
-                高级设置
-                {sdAdvance ? <UpOutlined /> : <DownOutlined />}
-              </Button>
-            )}
+
+            <Button
+              style={{ flex: '0 0 0%', marginLeft: 4 }}
+              onClick={() => {
+                setState((o) => ({ ...o, sdAdvance: !o?.sdAdvance }));
+              }}
+            >
+              高级设置
+              {sdAdvance ? <UpOutlined /> : <DownOutlined />}
+            </Button>
           </div>
         ),
       },
 
-      ...(sdAdvance && isDev
+      ...(sdAdvance
         ? [
+            isDev && {
+              label: 'SD 地址',
+              span: 24,
+              children: (
+                <Input
+                  placeholder='http://example.com'
+                  value={endpoint}
+                  onChange={(e) =>
+                    setState((o) => ({
+                      ...o,
+                      endpoint: e?.target?.value || '',
+                    }))
+                  }
+                />
+              ),
+            },
             {
               label: '提示词',
               span: 24,
@@ -210,7 +233,11 @@ export function useSdSettings(
             },
           ]
         : []),
-    ];
+    ].filter(Boolean) as {
+      label: string;
+      span: number;
+      children: JSX.Element;
+    }[];
   }, [state, loading, models, runAsync, isDev]);
 
   return items;

@@ -1,7 +1,7 @@
 import { FontSelector } from '@/components/FontSelector';
 import Slider from '@/components/Slider';
 import { DownOutlined, UpOutlined } from '@ant-design/icons';
-import { Button, ColorPicker, Input } from 'antd';
+import { Button, ColorPicker, Input, Typography } from 'antd';
 import React from 'react';
 
 const SIZE = 512;
@@ -36,7 +36,7 @@ export function useCharSettings(
     } = state;
     return [
       {
-        label: '艺术字',
+        label: '文字内容',
         span: 24,
         children: (
           <div style={{ display: 'flex' }}>
@@ -45,6 +45,14 @@ export function useCharSettings(
               value={value}
               onChange={(e) =>
                 setState((o) => ({ ...o, value: e?.target?.value || '' }))
+              }
+              suffix={
+                <Typography.Text
+                  type='secondary'
+                  style={{ pointerEvents: 'none' }}
+                >
+                  建议少于2个汉字，文字结构复杂影响生成效果
+                </Typography.Text>
               }
             />
             <Button
@@ -159,7 +167,11 @@ export function useCharSettings(
             },
           ]
         : []),
-    ];
+    ].filter(Boolean) as {
+      label: string;
+      span: number;
+      children: JSX.Element;
+    }[];
   }, [state]);
 
   return items;

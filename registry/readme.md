@@ -16,7 +16,7 @@
 
 <description>
 
-在阿里云函数计算（FC）进行文件存储（NAS）管理
+通过 Stable Diffusion Serverless API，进行艺术字创作
 
 </description>
 
@@ -43,7 +43,6 @@
 | 服务 |  备注  |
 | --- |  --- |
 | 函数计算 FC |  提供计算资源 |
-| 文件存储 NAS |  提供存储资源 |
 
 </service>
 

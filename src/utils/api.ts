@@ -4,7 +4,12 @@ import axios from 'axios';
 
 const MaxRetryTimes = 2;
 
-export async function txt2image(params: SdParams) {
+export async function txt2image(
+  params: SdParams,
+  asyncCallback?: (progress: any) => any
+) {
+  if (!!asyncCallback) asyncCallback({ progress: 0, etaRelative: 0 });
+
   let retryTimes = MaxRetryTimes;
   while (!!retryTimes) {
     const resp = await axios.post(
@@ -69,16 +74,43 @@ export async function txt2image(params: SdParams) {
         },
       },
       {
-        // headers: { 'Request-Type': 'sync' },
+        headers: { 'Request-Type': asyncCallback ? 'async' : 'sync' },
       }
     );
 
     if (!!resp?.data) {
-      return resp;
+      if (!!asyncCallback) {
+        const taskId = resp?.data?.taskId;
+
+        while (true) {
+          const res = await getProgress(params.endpoint, taskId);
+          asyncCallback(res?.data);
+          if (res?.data?.progress >= 1) {
+            break;
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+
+        while (true) {
+          const res = await getResult(params.endpoint, taskId);
+          if (res?.data?.status === 'succeeded') {
+            return res;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+      } else {
+        // 同步模式可以直接返回
+        return resp;
+      }
     }
   }
 
   throw new Error(`重试 ${MaxRetryTimes} 次后，失败`);
+}
+
+export async function getProgress(endpoint: string, taskId: string) {
+  return axios.get(`${endpoint}/tasks/${taskId}/progress`);
 }
 
 export async function getResult(endpoint: string, taskId: string) {
@@ -103,6 +135,8 @@ export async function getModels(endpoint: string): Promise<
     });
 
     if (resp.status !== 200) throw resp;
+    if (!Array.isArray(resp?.data))
+      throw resp?.data?.Message || resp?.data?.errorMsg;
 
     return resp?.data;
   } catch (e: any) {

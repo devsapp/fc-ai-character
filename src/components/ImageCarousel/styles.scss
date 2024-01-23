@@ -1,0 +1,39 @@
+.container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 5px 5px 0 5px;
+    background: rgba(0, 0, 0, 0.3);
+    text-wrap: nowrap;
+    overflow-x: overlay;
+
+    &::-webkit-scrollbar {
+        position: absolute;
+        height: 7px;
+        width: 100%;
+        // background: rgba(0, 0, 0, 0.3);
+    }
+
+    /*定义滚动条轨道 内阴影+圆角*/
+    &::-webkit-scrollbar-track {
+        // -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+        // border-radius: 10px;
+        // background-color: #F5F5F5;
+        // background: rgba(0, 0, 0, 0.1);
+    }
+
+    /*定义滑块 内阴影+圆角*/
+    &::-webkit-scrollbar-thumb {
+        border-radius: 10px;
+        // -webkit-box-shadow: inset 0 0 6px rgba(5, 5, 5, .3);
+        background-color: #888;
+    }
+
+
+    img {
+        width: 64px;
+        margin-right: 5px;
+        cursor: pointer;
+    }
+}

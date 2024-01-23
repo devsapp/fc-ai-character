@@ -1,46 +1,44 @@
 import Canvas from '@/components/Canvas';
 import { txt2image } from '@/utils/api';
 import { useLocalStorage } from '@/utils/useLocalStorage';
-import { CloseOutlined, SyncOutlined } from '@ant-design/icons';
+import { SyncOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
 import {
-  Button,
-  Carousel,
-  Col,
-  Descriptions,
-  Image,
-  Row,
-  Select,
-  Space,
-  Spin,
-  Typography,
-  notification,
+Button,
+Descriptions,
+Space,
+Spin,
+Typography,
+notification,
 } from 'antd';
 import axios from 'axios';
 import React from 'react';
-import { CharParams, useCharSettings } from '../Settings/Char';
-import { SdParams, useSdSettings } from '../Settings/Sd';
+import { ImageCarousel } from '../ImageCarousel';
+import { ImageHistory,ImgHistory } from '../ImageHistory';
+import { ProgressBar } from '../ProgressBar';
+import { CharParams,useCharSettings } from '../Settings/Char';
+import { SdParams,useSdSettings } from '../Settings/Sd';
 import styles from './style.scss';
 
 const SIZE = 512;
 const DEFAULT_ENDPOINT_HASH = 'c410d179b056797269a4a2188bdf8a48'; // 用来方便在混淆后替换环境变量的值
-
-type ImageHistoryWithParams = { url: string; cost: number } & Partial<SdParams>;
-type ImageHistory = ImageHistoryWithParams | string;
 
 export default function () {
   const {
     data: sdStyles,
     loading: loadingStyles,
     runAsync: refreshStyles,
-  } = useRequest<({ name: string } & Partial<CharParams & SdParams>)[], []>(
-    async () => {
-      const resp = await axios.get(
-        'https://serverless-tool-images.oss-cn-hangzhou.aliyuncs.com/aigc/json/fc-ai-charact.json'
-      );
-      return resp?.data;
-    }
-  );
+  } = useRequest<
+    ({ name: string; img: string } & Partial<CharParams & SdParams>)[],
+    []
+  >(async () => {
+    const resp = await axios.get(
+      'https://serverless-tool-images.oss-cn-hangzhou.aliyuncs.com/aigc/json/fc-ai-character.json',
+      { headers: { 'Cache-Control': 'no-cache' } }
+    );
+
+    return resp?.data;
+  });
 
   const [charState, setCharState] = useLocalStorage<CharParams>('char', {
     fontAdvance: false,
@@ -71,6 +69,7 @@ export default function () {
     face: true,
     hr: 2,
     hrSteps: 10,
+    count: 4,
   });
 
   const charItems = useCharSettings(charState, setCharState);
@@ -87,71 +86,80 @@ export default function () {
     [setSdState]
   );
 
-  const [imgs, setImages] = React.useState([]);
+  const [imgs, setImages] = React.useState<string[]>([]);
   // const [history, setHistory] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
 
-  const [imageHistory, setImageHistory] = useLocalStorage<ImageHistory[]>(
+  const [imageHistory, setImageHistory] = useLocalStorage<ImgHistory[]>(
     'image_history',
     []
   );
 
-  const isDev = React.useMemo(() => !!localStorage.getItem('development'), []);
+  const [progress, setProgress] = React.useState<
+    {
+      progress: number;
+      etaRelative: number;
+    }[]
+  >([]);
 
   return (
-    <Space direction='vertical' style={{ width: '100%' }}>
-      <Typography.Title>AI 艺术字</Typography.Title>
+    <Space direction='vertical' style={{ width: '100%' }} size='large'>
+      <Space
+        style={{
+          width: '100%',
+          justifyContent: 'space-between',
+          alignItems: 'end',
+          marginBottom: '2em',
+        }}
+      >
+        <Space style={{ alignItems: 'end' }}>
+          <Typography.Title style={{ margin: 0 }}>
+            新年新气象，换个新头像
+          </Typography.Title>
+          <Typography.Text type='secondary'>
+            基于函数计算 + Stable Diffusion API 解决方案生成AI文字头像
+          </Typography.Text>
+        </Space>
+
+        <Space style={{ alignItems: 'end' }}>
+          <Button onClick={() => localStorage.clear()}>清理缓存</Button>
+          <Button
+            style={{ flex: '0 0 0%', marginLeft: 4 }}
+            loading={loadingStyles}
+            onClick={() => refreshStyles()}
+          >
+            {loadingStyles || <SyncOutlined />}
+          </Button>
+        </Space>
+      </Space>
+
+      <Spin spinning={loadingStyles}>
+        <Space className={styles.styles}>
+          {(sdStyles || [])?.map((style) => (
+            <div
+              className={styles.item}
+              onClick={() => {
+                setCharState((o) => ({ ...o, ...style }));
+                setSdState((o) => ({ ...o, ...style }));
+                notification.success({
+                  message: `已配置为 ${style.name}`,
+                });
+              }}
+            >
+              <img src={style.img} />
+              <span>{style.name}</span>
+            </div>
+          ))}
+        </Space>
+      </Spin>
 
       <Descriptions
         bordered
         size={'small'}
-        extra={<Button onClick={() => localStorage.clear()}>清理缓存</Button>}
         column={24}
         labelStyle={{ width: '10em' }}
         contentStyle={{ maxWidth: 0 }}
-        items={[
-          {
-            label: '样式',
-            span: 24,
-            children: (
-              <div style={{ display: 'flex' }}>
-                <Select
-                  placeholder='配置内置的样式'
-                  value={null}
-                  style={{ width: '100%' }}
-                  loading={loadingStyles}
-                  options={[
-                    ...(sdStyles || [])?.map((s) => ({
-                      label: s.name,
-                      value: s.name,
-                    })),
-                  ]}
-                  onSelect={(v) => {
-                    const style = (sdStyles || [])?.filter(
-                      (s) => s.name === v
-                    )?.[0];
-                    if (!!style) {
-                      setCharState((o) => ({ ...o, ...style }));
-                      setSdState((o) => ({ ...o, ...style }));
-                      notification.success({
-                        message: `已配置为 ${style.name}`,
-                      });
-                    }
-                  }}
-                />
-                <Button
-                  style={{ flex: '0 0 0%', marginLeft: 4 }}
-                  loading={loadingStyles}
-                  onClick={() => refreshStyles()}
-                >
-                  {loadingStyles || <SyncOutlined />}
-                </Button>
-              </div>
-            ),
-          },
-          ...charItems,
-          ...sdItems,
-        ]}
+        items={[...charItems, ...sdItems]}
       />
 
       <div
@@ -163,33 +171,48 @@ export default function () {
         }}
       >
         <Canvas params={charState} size={SIZE} callback={setMask} />
+
         <Button
           type='primary'
           loading={loading}
           onClick={async () => {
             try {
               setLoading(true);
-              const startTime = Date.now();
-              const resp = await txt2image(sdState);
-              const cost = Date.now() - startTime;
 
-              const imageArr = resp?.data?.ossUrl || resp?.data?.images || [];
-              setImages(
-                imageArr
-                  .filter(Boolean)
-                  .map((img: string) =>
-                    img.startsWith('http')
-                      ? img
-                      : `data:image/png;base64,${img}`
-                  )
+              setImages([]);
+              setProgress(
+                Array(sdState.count).fill({ progress: 0, etaRelative: 0 })
               );
 
-              if (!!imageArr && imageArr.length > 0) {
-                setImageHistory((o) => [
-                  isDev ? { ...sdState, url: imageArr[0], cost } : imageArr[0],
-                  ...(o || []),
-                ]);
-              }
+              await Promise.all(
+                Array(sdState.count)
+                  .fill(0)
+                  .map(async (_, idx) => {
+                    const startTime = Date.now();
+                    const resp = await txt2image(sdState, (p) =>
+                      setProgress((o) => [
+                        ...o.slice(0, idx),
+                        p,
+                        ...o.slice(idx + 1),
+                      ])
+                    );
+                    const cost = Date.now() - startTime;
+                    const imageArr =
+                      resp?.data?.ossUrl || resp?.data?.images || [];
+                    if (imageArr.length > 0) {
+                      const img = imageArr?.[0].startsWith('http')
+                        ? imageArr?.[0]
+                        : `data:image/png;base64,${imageArr?.[0]}`;
+                      setImages((o) => [...o, img]);
+                      setImageHistory((o) =>
+                        [{ ...sdState, url: img, cost }, ...(o || [])].slice(
+                          0,
+                          50
+                        )
+                      );
+                    }
+                  })
+              );
             } catch (e: any) {
               console.error(e);
               notification.error({
@@ -204,90 +227,61 @@ export default function () {
         >
           生成 🚀
         </Button>
-        <Spin spinning={loading}>
-          <div
-            style={{
-              width: SIZE,
-              height: SIZE,
-              border: '2px dotted #ccc',
-              position: 'relative',
-            }}
-          >
-            {!!loading && (
-              <div
-                style={{
-                  position: 'relative',
-                  top: '50%',
-                  left: '50%',
-                  width: 256,
-                  transform: 'translate(-50%, -50%)',
-                }}
-              >
-                出图需要一定的时间，请耐心等待。长时间不使用需要重新初始化
-                Stable Diffusion，这可能需要您等待模型初始化。
-              </div>
-            )}
-            {!!imgs && !loading && (
-              <Image.PreviewGroup>
-                <Carousel>
-                  {imgs.filter(Boolean).map((img) => (
-                    <Image src={img} />
-                  ))}
-                </Carousel>
-              </Image.PreviewGroup>
-            )}
-          </div>
-        </Spin>
+
+        <div
+          style={{
+            width: SIZE,
+            height: SIZE,
+            border: '2px dotted #ccc',
+            position: 'relative',
+          }}
+        >
+          {!!loading && (
+            <div>
+              {progress.map((p, idx) => (
+                <ProgressBar
+                  key={idx}
+                  progress={p?.progress || 0}
+                  eta={p?.etaRelative || 0}
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    right: 0,
+                    top: `calc(${idx} * 1.5em)`,
+                    zIndex: 100,
+                  }}
+                />
+              ))}
+            </div>
+          )}
+          {!!loading && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                width: 256,
+                transform: 'translate(-50%, -50%)',
+                filter: 'opacity(0.5)',
+              }}
+            >
+              出图需要一定的时间，请耐心等待。长时间不使用需要重新初始化 Stable
+              Diffusion，这可能需要您等待模型初始化。
+            </div>
+          )}
+
+          <Spin spinning={loading} style={{ minHeight: SIZE }}>
+            <ImageCarousel images={imgs || []} />
+          </Spin>
+        </div>
       </div>
 
       <hr style={{ borderTop: '2px dashed #ccc', margin: '2em 0' }} />
 
-      <Image.PreviewGroup>
-        <Row gutter={[24, 24]}>
-          {imageHistory?.map((img, idx) => {
-            const item = (
-              typeof img === 'string' ? { url: img } : img
-            ) as ImageHistoryWithParams;
-
-            return (
-              <Col
-                xs={24}
-                sm={8}
-                // md={8}
-                lg={6}
-                // xl={4}
-                xxl={4}
-                key={item.url}
-                className={styles['mask-container']}
-              >
-                {isDev && !!item.model && (
-                  <div className={styles.mask}>
-                    {`模型 ${item.model}\n步骤数 ${
-                      item.steps
-                    } ControlNet 范围 ${item.start}~${item.end}\n权重 ${
-                      item.weight
-                    }\n人脸修复 ${item.face}\n高清修复 ${
-                      item.hr
-                    } 高清修复步数 ${item.hrSteps}\n耗时 ${
-                      Math.round((item.cost * 100) / 1000) / 100
-                    }s`}
-                  </div>
-                )}
-                <CloseOutlined
-                  className={styles.close}
-                  onClick={() => {
-                    setImageHistory((o) => [
-                      ...o.slice(0, idx),
-                      ...o.slice(idx + 1),
-                    ]);
-                  }}
-                />
-                <Image src={item.url} width='100%' />
-              </Col>
-            );
-          })}
-        </Row>
-      </Image.PreviewGroup>
+      <ImageHistory
+        imageHistory={imageHistory}
+        setImageHistory={setImageHistory}
+      />
     </Space>
   );
 }

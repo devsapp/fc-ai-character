@@ -1,10 +1,10 @@
 Edition: 3.0.0
 Type: Project
 Name: fc-ai-character
-Version: dev
+Version: 0.0.1
 Provider:
   - 阿里云
-Description: 通过 Stable Diffusion API，进行艺术字创作
+Description: 通过 Stable Diffusion Serverless API，进行艺术字创作
 Organization: 阿里云函数计算（FC）
 Category: Web 应用
 Effective: Public
