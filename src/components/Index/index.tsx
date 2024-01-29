@@ -4,20 +4,20 @@ import { useLocalStorage } from '@/utils/useLocalStorage';
 import { SyncOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
 import {
-Button,
-Descriptions,
-Space,
-Spin,
-Typography,
-notification,
+  Button,
+  Descriptions,
+  Space,
+  Spin,
+  Typography,
+  notification,
 } from 'antd';
 import axios from 'axios';
 import React from 'react';
 import { ImageCarousel } from '../ImageCarousel';
-import { ImageHistory,ImgHistory } from '../ImageHistory';
+import { ImageHistory, ImgHistory } from '../ImageHistory';
 import { ProgressBar } from '../ProgressBar';
-import { CharParams,useCharSettings } from '../Settings/Char';
-import { SdParams,useSdSettings } from '../Settings/Sd';
+import { CharParams, useCharSettings } from '../Settings/Char';
+import { SdParams, useSdSettings } from '../Settings/Sd';
 import styles from './style.scss';
 
 const SIZE = 512;
@@ -51,26 +51,30 @@ export default function () {
     size: 256,
     shadow: 8,
   });
-  const [sdState, setSdState] = useLocalStorage<SdParams>('sd', {
-    sdAdvance: false,
-    endpoint: DEFAULT_ENDPOINT_HASH.startsWith('http')
-      ? DEFAULT_ENDPOINT_HASH
-      : '',
-    prompt:
-      'chinese dragon, orange (fruit), fruit, petals, apple, mandarin orange, food, barefoot, goldfish, orange slice, confetti, open mouth, fire, 1girl, pants, closed eyes, smile,<lora:20240106-1704550485876:1>,',
-    negativePrompt:
-      '(worst quality, low quality:2),monochrome,zombie,overexposure,watermark,text,bad anatomy,bad hand,extra hands,extra fingers,too many fingers,fused fingers,bad arm,distorted arm,extra arms,fused arms,extra legs,missing leg,disembodied leg,extra nipples,detached arm,liquid hand,inverted hand,disembodied limb,small breasts,loli,oversized head,extra body,completely nude,extra navel,easynegative,(hair between eyes),sketch,duplicate,ugly,huge eyes,text,logo,worst face,(bad and mutated hands:1.3),(blurry:2),horror,geometry,bad_prompt,(bad hands),(missing fingers),multiple limbs,bad anatomy,(interlocked fingers:1.2),Ugly Fingers,(extra digit and hands and fingers and legs and arms:1.4),((2girl)),(deformed fingers:1.2),(long fingers:1.2),(bad-artist-anime),bad-artist,bad hand,extra legs,(ng_deepnegative_v1_75t),02-A2[芩潇功能]修手04完整版较推荐-bad_prompt,negative_hand-neg,Negfeet-neg,sketch,(worst quality:2),(low quality:2),(normal quality:2),low res,bad anatomy,bad hands,normal quality,((monochrome)),((abdominal muscle)),((grayscale:1.2)),disfigured,kitsch,ugly,oversaturated,grain,low-res,Deformed,blurry,bad anatomy,disfigured,poorly drawn face,mutation,mutated,extra limb,ugly,poorly drawn hands,missing limb,blurry,floating limbs,disconnected limbs,malformed hands,blur,out of focus,long neck,long body,ugly,disgusting,poorly drawn,childish,mutilated,mangled,old,surreal,big pussy,ugly pussy,deformed pussy,extra legs,nsfw,badhandv4,easynegative,nipples,mole,freckles,bad-hands-5,bad_prompt,badhandv4,',
-    model: 'revAnimatedV1.2.2.safetensors',
-    start: 2,
-    end: 8,
-    weight: 90,
-    mask: '',
-    steps: 20,
-    face: true,
-    hr: 2,
-    hrSteps: 10,
-    count: 4,
-  });
+  const [sdState, setSdState] = useLocalStorage<SdParams>(
+    'sd',
+    {
+      sdAdvance: false,
+      endpoint: DEFAULT_ENDPOINT_HASH.startsWith('http')
+        ? DEFAULT_ENDPOINT_HASH
+        : '',
+      prompt:
+        'chinese dragon, orange (fruit), fruit, petals, apple, mandarin orange, food, barefoot, goldfish, orange slice, confetti, open mouth, fire, 1girl, pants, closed eyes, smile,<lora:20240106-1704550485876:1>,',
+      negativePrompt:
+        '(worst quality, low quality:2),monochrome,zombie,overexposure,watermark,text,bad anatomy,bad hand,extra hands,extra fingers,too many fingers,fused fingers,bad arm,distorted arm,extra arms,fused arms,extra legs,missing leg,disembodied leg,extra nipples,detached arm,liquid hand,inverted hand,disembodied limb,small breasts,loli,oversized head,extra body,completely nude,extra navel,easynegative,(hair between eyes),sketch,duplicate,ugly,huge eyes,text,logo,worst face,(bad and mutated hands:1.3),(blurry:2),horror,geometry,bad_prompt,(bad hands),(missing fingers),multiple limbs,bad anatomy,(interlocked fingers:1.2),Ugly Fingers,(extra digit and hands and fingers and legs and arms:1.4),((2girl)),(deformed fingers:1.2),(long fingers:1.2),(bad-artist-anime),bad-artist,bad hand,extra legs,(ng_deepnegative_v1_75t),02-A2[芩潇功能]修手04完整版较推荐-bad_prompt,negative_hand-neg,Negfeet-neg,sketch,(worst quality:2),(low quality:2),(normal quality:2),low res,bad anatomy,bad hands,normal quality,((monochrome)),((abdominal muscle)),((grayscale:1.2)),disfigured,kitsch,ugly,oversaturated,grain,low-res,Deformed,blurry,bad anatomy,disfigured,poorly drawn face,mutation,mutated,extra limb,ugly,poorly drawn hands,missing limb,blurry,floating limbs,disconnected limbs,malformed hands,blur,out of focus,long neck,long body,ugly,disgusting,poorly drawn,childish,mutilated,mangled,old,surreal,big pussy,ugly pussy,deformed pussy,extra legs,nsfw,badhandv4,easynegative,nipples,mole,freckles,bad-hands-5,bad_prompt,badhandv4,',
+      model: 'revAnimatedV1.2.2.safetensors',
+      start: 2,
+      end: 8,
+      weight: 90,
+      mask: '',
+      steps: 20,
+      face: true,
+      hr: 2,
+      hrSteps: 10,
+      count: 4,
+    },
+    ['endpoint', 'mask']
+  );
 
   const charItems = useCharSettings(charState, setCharState);
   const sdItems = useSdSettings(sdState, setSdState);
@@ -122,7 +126,14 @@ export default function () {
         </Space>
 
         <Space style={{ alignItems: 'end' }}>
-          <Button onClick={() => localStorage.clear()}>清理缓存</Button>
+          <Button
+            onClick={() => {
+              localStorage.clear();
+              window.location.reload();
+            }}
+          >
+            清理缓存
+          </Button>
           <Button
             style={{ flex: '0 0 0%', marginLeft: 4 }}
             loading={loadingStyles}

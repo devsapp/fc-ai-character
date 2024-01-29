@@ -10,68 +10,72 @@ export async function txt2image(
 ) {
   if (!!asyncCallback) asyncCallback({ progress: 0, etaRelative: 0 });
 
+  const sdParams = {
+    prompt: params?.prompt,
+    negative_prompt: params?.negativePrompt,
+    steps: params.steps,
+    n_iter: 1, // 迭代步数
+    height: 512,
+    width: 512,
+    sampler_index: 'DPM++ 2M Karras',
+    sampler_name: 'DPM++ 2M Karras',
+    batch_size: 1,
+    denoising_strength: 0.7, // 噪声抑制强度
+    enable_hr: params.hr > 1,
+    hr_scale: params.hr,
+    hr_upscaler: 'Latent',
+    hr_second_pass_steps: params.hrSteps,
+    override_settings: {
+      sd_model_checkpoint: params.model,
+    },
+    alwayson_scripts: {
+      ...(params.weight > 0 && params.end - params.start > 0
+        ? {
+            controlnet: {
+              args: [
+                {
+                  control_mode: 0,
+                  enabled: true,
+                  guidance_start:
+                    Math.round((params?.start / params.steps) * 100) / 100, // 起始步数
+                  guidance_end:
+                    Math.round((params?.end / params.steps) * 100) / 100, // 结束步数
+                  input_image: params?.mask,
+                  model: 'control_v11f1e_sd15_tile', // 模型
+                  // module: 'softedge_pidinet', // 预处理器
+                  pixel_perfect: true,
+                  resize_mode: 1, // 0 Just Resize; 1 Scale to Fit (Inner Fit); 2 Envelope (Outer Fit)
+                  lowvram: false,
+                  processor_res: 64, // 预处理器分辨率
+                  weight: params?.weight / 100, // 权重
+                },
+              ],
+            },
+          }
+        : {}),
+      ...(params.face
+        ? {
+            ADetailer: {
+              args: [
+                {
+                  ad_model: 'mediapipe_face_full',
+                  ad_use_inpaint_width_height: true,
+                  ad_denoising_strength: 0.4,
+                },
+              ],
+            },
+          }
+        : {}),
+    },
+  };
+
   let retryTimes = MaxRetryTimes;
   while (!!retryTimes) {
     const resp = await axios.post(
       `${params?.endpoint}/txt2img`,
       {
         stable_diffusion_model: params.model,
-        prompt: params?.prompt,
-        negative_prompt: params?.negativePrompt,
-        steps: params.steps,
-        n_iter: 1, // 迭代步数
-        height: 512,
-        width: 512,
-        sampler_index: 'DPM++ 2M Karras',
-        sampler_name: 'DPM++ 2M Karras',
-        batch_size: 1,
-        denoising_strength: 0.7, // 噪声抑制强度
-        enable_hr: params.hr > 1,
-        hr_scale: params.hr,
-        hr_upscaler: 'Latent',
-        hr_second_pass_steps: params.hrSteps,
-        override_settings: {
-          sd_model_checkpoint: params.model,
-        },
-        alwayson_scripts: {
-          ...(params.weight > 0 && params.end - params.start > 0
-            ? {
-                controlnet: {
-                  args: [
-                    {
-                      control_mode: 0,
-                      enabled: true,
-                      guidance_start:
-                        Math.round((params?.start / params.steps) * 100) / 100, // 起始步数
-                      guidance_end:
-                        Math.round((params?.end / params.steps) * 100) / 100, // 结束步数
-                      input_image: params?.mask,
-                      model: 'control_v11f1e_sd15_tile', // 模型
-                      // module: 'softedge_pidinet', // 预处理器
-                      pixel_perfect: true,
-                      resize_mode: 1, // 0 Just Resize; 1 Scale to Fit (Inner Fit); 2 Envelope (Outer Fit)
-                      lowvram: false,
-                      processor_res: 64, // 预处理器分辨率
-                      weight: params?.weight / 100, // 权重
-                    },
-                  ],
-                },
-              }
-            : {}),
-          ...(params.face
-            ? {
-                ADetailer: {
-                  args: [
-                    {
-                      ad_model: 'mediapipe_face_full',
-                      ad_use_inpaint_width_height: true,
-                      ad_denoising_strength: 0.4,
-                    },
-                  ],
-                },
-              }
-            : {}),
-        },
+        ...sdParams,
       },
       {
         headers: { 'Request-Type': asyncCallback ? 'async' : 'sync' },

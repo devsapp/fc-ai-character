@@ -1,7 +1,11 @@
 import { useLocalStorageState } from 'ahooks';
 import React from 'react';
 
-export function useLocalStorage<T>(key: string, defaultValue: T) {
+export function useLocalStorage<T>(
+  key: string,
+  defaultValue: T,
+  skipKey?: string[]
+) {
   const [ls, setLs] = useLocalStorageState<T>(key, {
     serializer: (value) => {
       if (Array.isArray(value)) return JSON.stringify(value);
@@ -10,6 +14,7 @@ export function useLocalStorage<T>(key: string, defaultValue: T) {
         return JSON.stringify(
           Object.entries(value as any)
             .filter(([, v]) => !(typeof v === 'string' && v.length > 200))
+            .filter(([k]) => !skipKey || !skipKey.includes(k))
             .reduce(
               (pre, [k, v]) => ({
                 ...pre,
